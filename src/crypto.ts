@@ -25,30 +25,57 @@ type GenerateRsaKeyPair = {
   privateKey: webcrypto.CryptoKey;
 };
 export async function generateRsaKeyPair(): Promise<GenerateRsaKeyPair> {
-  // TODO implement this function using the crypto package to generate a public and private RSA key pair.
-  //      the public key should be used for encryption and the private key for decryption. Make sure the
-  //      keys are extractable.
+  try {
+    const keyPair = await crypto.subtle.generateKey(
+        {
+          name: "RSA-OAEP",
+          modulusLength: 2048,
+          publicExponent: new Uint8Array([0x01, 0x00, 0x01]), // 65537
+          hash: { name: "SHA-256" },
+        },
+        true, // extractable
+        ["encrypt", "decrypt"] // key usages
+    );
 
-  // remove this
-  return { publicKey: {} as any, privateKey: {} as any };
+    return {
+      publicKey: keyPair.publicKey,
+      privateKey: keyPair.privateKey,
+    };
+  } catch (error) {
+    console.error("Error generating RSA key pair:", error);
+    throw error;
+  }
 }
+
 
 // Export a crypto public key to a base64 string format
 export async function exportPubKey(key: webcrypto.CryptoKey): Promise<string> {
-  // TODO implement this function to return a base64 string version of a public key
-
-  // remove this
-  return "";
+  try {
+    const exportedKey = await crypto.subtle.exportKey("spki", key);
+    const exportedAsString = arrayBufferToBase64(exportedKey);
+    return exportedAsString;
+  } catch (error) {
+    console.error("Error exporting public key:", error);
+    throw error;
+  }
 }
 
 // Export a crypto private key to a base64 string format
 export async function exportPrvKey(
-  key: webcrypto.CryptoKey | null
+    key: webcrypto.CryptoKey | null
 ): Promise<string | null> {
-  // TODO implement this function to return a base64 string version of a private key
+  if (!key) {
+    return null; // Return null if the key is null
+  }
 
-  // remove this
-  return "";
+  try {
+    const exportedKey = await crypto.subtle.exportKey("pkcs8", key);
+    const exportedAsString = arrayBufferToBase64(exportedKey);
+    return exportedAsString;
+  } catch (error) {
+    console.error("Error exporting private key:", error);
+    throw error;
+  }
 }
 
 // Import a base64 string public key to its native format
