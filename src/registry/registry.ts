@@ -1,6 +1,7 @@
 import bodyParser from "body-parser";
 import express, { Request, Response } from "express";
 import { REGISTRY_PORT } from "../config";
+import { generateRsaKeyPair, exportPrvKey } from "../crypto";
 
 export type Node = { nodeId: number; pubKey: string };
 
@@ -41,7 +42,44 @@ export async function launchRegistry() {
 
     return res.status(201).json({ message: "Node registered successfully" });
   });
+  interface PrivateKeyRegistry {
+    [nodeId: string]: string;
+  }
 
+// In-memory registry to store nodes' private keys
+  const privateKeys: PrivateKeyRegistry = {};
+
+
+  _registry.get("/getPrivateKey/:nodeId", async (req: Request, res: Response) => {
+    const nodeId = req.params.nodeId;
+
+    // Check if private key for the node already exists
+    if (privateKeys[nodeId]) {
+      return res.json({ result: privateKeys[nodeId] });
+    }
+
+    try {
+      // Generate RSA key pair
+      const { privateKey } = await generateRsaKeyPair();
+
+      // Convert private key to string
+      const privateKeyString = await exportPrvKey(privateKey);
+
+      // Check if privateKeyString is not null
+      if (privateKeyString !== null) {
+        // Store private key in the registry
+        privateKeys[nodeId] = privateKeyString;
+
+        return res.json({ result: privateKeyString });
+      } else {
+        // Handle the case where privateKeyString is null
+        return res.status(500).json({ error: "Internal Server Error" });
+      }
+    } catch (error) {
+      console.error("Error generating private key:", error);
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
+  });
 
 
   const server = _registry.listen(REGISTRY_PORT, () => {

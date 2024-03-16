@@ -32,6 +32,8 @@ export async function user(userId: number) {
     res.status(200).send("success");
   });
 
+
+
   const server = _user.listen(BASE_USER_PORT + userId, () => {
     console.log(`User ${userId} is listening on port ${BASE_USER_PORT + userId}`);
   });
